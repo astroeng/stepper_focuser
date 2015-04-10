@@ -1,11 +1,43 @@
+
+/*************************************************************
+ * Derek Schacht
+ * 2015/01/15
+ *
+ * *** Use Statement and License ***
+ * Free for non commercial use! Anything else is not authorized without consent.
+ *  Contact [dschacht ( - at - ) gmail ( - dot - ) com] for use consent.
+ *************************************************************
+ */
+
+
 #include <Arduino.h>
-#include "focus_knob.h"
+#include "rot_knob.h"
 
-static unsigned char rot_knob_dir;
-static unsigned char rot_knob_state;
-static Focus_Motor* motor;
+#define ROT_STATE_A 12
+#define ROT_STATE_B 13
+#define ROT_STATE_C 14
+#define ROT_STATE_D 15
 
-static unsigned char setupState;
+Rotary_Knob::Rotary_Knob()
+{
+  this->switch_A = 2;
+  this->switch_B = 3;
+
+  this->rot_knob_dir   = CLOCKWISE;
+  this->rot_knob_state = ROT_STATE_A;
+
+}
+
+Rotary_Knob::Rotary_Knob(int switch_A, int switch_B)
+{
+  this->switch_A = switch_A;
+  this->switch_B = switch_B;
+  
+  this->rot_knob_dir   = CLOCKWISE;
+  this->rot_knob_state = ROT_STATE_A;
+
+}
+
 
 /* This implements a state machine to track the position of a
  * grey coded rotary encoder. The normal state transition flows
@@ -13,28 +45,30 @@ static unsigned char setupState;
  * If somehow the statemachine is out of sync with the rotary
  * encoder the state machine will capture the position of the
  * rotary encoder in 2 steps.
- * This function is designed to be called as an ISR when one of 
+ * This function is designed to be called by an ISR when one of 
  * the two pin states change. However, it can also work in polling
  * mode. In polling mode the maximum rotation speed of the knob
  * is limited by the polling rate.
  */
-void rot_knob()
+
+int Rotary_Knob::read()
 {
+
   int value;
-  value = digitalRead(STATEA) | (digitalRead(STATEB) << 1);
-  
+  value = digitalRead(switch_A) | (digitalRead(switch_B) << 1);
+
   /* State A processing the valid state from here are:
    * - State D
    * - State B
    */
   if (value == 2 && rot_knob_state == ROT_STATE_A)
   {
-    rot_knob_dir = MOVEIN;
+    rot_knob_dir = CLOCKWISE;
     rot_knob_state = ROT_STATE_D;
   }
   else if (value == 1 && rot_knob_state == ROT_STATE_A)
   {
-    rot_knob_dir = MOVEOUT;
+    rot_knob_dir = ANTICLOCKWISE;
     rot_knob_state = ROT_STATE_B;
   }
   
@@ -44,12 +78,12 @@ void rot_knob()
    */
   else if (value == 0 && rot_knob_state == ROT_STATE_B)
   {
-    rot_knob_dir = MOVEIN;
+    rot_knob_dir = CLOCKWISE;
     rot_knob_state = ROT_STATE_A;
   }
   else if (value == 3 && rot_knob_state == ROT_STATE_B)
   {
-    rot_knob_dir = MOVEOUT;
+    rot_knob_dir = ANTICLOCKWISE;
     rot_knob_state = ROT_STATE_C;
   }
   
@@ -59,12 +93,12 @@ void rot_knob()
    */
   else if (value == 1 && rot_knob_state == ROT_STATE_C)
   {
-    rot_knob_dir = MOVEIN;
+    rot_knob_dir = CLOCKWISE;
     rot_knob_state = ROT_STATE_B;
   }
   else if (value == 2 && rot_knob_state == ROT_STATE_C)
   {
-    rot_knob_dir = MOVEOUT;
+    rot_knob_dir = ANTICLOCKWISE;
     rot_knob_state = ROT_STATE_D;
   }
   
@@ -74,48 +108,15 @@ void rot_knob()
    */
   else if (value == 3 && rot_knob_state == ROT_STATE_D)
   {
-    rot_knob_dir = MOVEIN;
+    rot_knob_dir = CLOCKWISE;
     rot_knob_state = ROT_STATE_C;
   }
   else if (value == 0 && rot_knob_state == ROT_STATE_D)
   {
-    rot_knob_dir = MOVEOUT;
+    rot_knob_dir = ANTICLOCKWISE;
     rot_knob_state = ROT_STATE_A;
   }
-
-  motor->updatePosition(rot_knob_dir);
-}
-
-
-void setupKnob()
-{
-
-}
-
-Focus_Knob::Focus_Knob()
-{
-  pinMode(BUTTON, INPUT_PULLUP);
-  pinMode(STATEA, INPUT_PULLUP);
-  pinMode(STATEB, INPUT_PULLUP);
-
-  rot_knob_dir   = MOVEIN;
-  rot_knob_state = ROT_STATE_A;
-}
-
-void Focus_Knob::setInterface(Focus_Motor* motor_in)
-{
-  attachInterrupt(0, rot_knob, CHANGE);
-  attachInterrupt(1, rot_knob, CHANGE);  
   
-  motor = motor_in;
-}
-
-void Focus_Knob::setInterface(Focus_Setup* setup_in)
-{
-
-}
-
-unsigned char Focus_Knob::getButtonState()
-{
-  return digitalRead(BUTTON);
+  return rot_knob_dir;
+  
 }

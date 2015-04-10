@@ -1,3 +1,15 @@
+
+/*************************************************************
+ * Derek Schacht
+ * 2014/04/23
+ *
+ * *** Use Statement and License ***
+ * Free for non commercial use! Anything else is not authorized without consent.
+ *  Contact [dschacht ( - at - ) gmail ( - dot - ) com] for use consent.
+ *************************************************************
+ */
+
+
 #include <Arduino.h>
 #include "focus_motor.h"
 
@@ -35,7 +47,7 @@ Focus_Motor::Focus_Motor(char stepPin, char dirPin, char ms1Pin, char ms2Pin)
 
 void Focus_Motor::updatePosition(char dir)
 {
-  if (dir == MOVEOUT && desiredPosition <= (4800 - currentSpeed))
+  if (dir == MOVEOUT && desiredPosition <= (MAX_STEPS - currentSpeed))
   {
     desiredPosition += currentSpeed;
   }
@@ -48,9 +60,17 @@ void Focus_Motor::updatePosition(char dir)
 /* Returns the desired position. Typically for display purposes.
  */
 
-unsigned int Focus_Motor::getPosition()
+unsigned int Focus_Motor::getOrder()
 {
   return desiredPosition;
+}
+
+/* Returns the desired position. Typically for display purposes.
+ */
+
+unsigned int Focus_Motor::getPosition()
+{
+  return currentPosition;
 }
 
 /* This function needs to be called once per loop. It will step the
@@ -65,19 +85,23 @@ void Focus_Motor::processMotor()
 {
   if (desiredPosition < currentPosition)
   {
-    digitalWrite(dirPin, HIGH);
+    digitalWrite(dirPin, LOW);
     digitalWrite(stepPin, LOW);
+    delayMicroseconds(100);
     currentPosition--;
     digitalWrite(stepPin, HIGH);
+    delayMicroseconds(100);
     digitalWrite(stepPin, LOW);
   }
   
   if (desiredPosition > currentPosition)
   {
-    digitalWrite(dirPin, LOW);
+    digitalWrite(dirPin, HIGH);
     digitalWrite(stepPin, LOW);
+    delayMicroseconds(100);
     currentPosition++;
     digitalWrite(stepPin, HIGH);
+    delayMicroseconds(100);
     digitalWrite(stepPin, LOW);
   }
 }
