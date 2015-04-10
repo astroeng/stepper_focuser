@@ -57,6 +57,11 @@ void Focus_Motor::updatePosition(char dir)
   } 
 }
 
+void Focus_Motor::stopAtCurrentPosition()
+{
+  desiredPosition = currentPosition;
+}
+
 /* Returns the desired position. Typically for display purposes.
  */
 

@@ -27,10 +27,13 @@ class Focus_Motor
     Focus_Motor(char stepPin, char dirPin, char ms1Pin, char ms2Pin);
 
     void updatePosition(char dir);
-    void updateSpeed(int newSpeed);
-    void processMotor();
+    void stopAtCurrentPosition();
+
     unsigned int getPosition();
     unsigned int getOrder();
+    
+    void processMotor();
+    
   private:
     unsigned int currentPosition;
     unsigned int desiredPosition;
