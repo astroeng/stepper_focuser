@@ -4,7 +4,7 @@
  *
  * *** Use Statement and License ***
  * Free for non commercial use! Anything else is not authorized without consent.
- *  Contact [dschacht ( - at - ) gmail ( - dot - ) com] for use consent.
+ *  Contact [dschacht ( - at - ) gmail ( - dot - ) com] for use questions.
  *************************************************************
  * Initial Code based on a function I wrote in college for a microblaze CPU.
  */
