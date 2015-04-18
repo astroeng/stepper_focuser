@@ -24,7 +24,7 @@
  *   Add a temperature sensor and perform temperature based adjustments.
  */
 
-#include "focus_display.h"
+#include <shift_segment_display.h>
 #include "focus_motor.h"
 #include "rot_knob.h"
 
@@ -53,7 +53,25 @@
 #define MS1  A6
 #define MS2  A7
 
-Focus_Display display;
+#define SEGMENT_A  0x0004
+#define SEGMENT_B  0x0020
+#define SEGMENT_C  0x0001
+#define SEGMENT_D  0x2000
+#define SEGMENT_E  0x1000
+#define SEGMENT_F  0x0100
+#define SEGMENT_G  0x0010
+#define SEGMENT_DP 0x0400
+
+#define DIGIT_1 0x0080 // Left most bottom display (display 2)
+#define DIGIT_2 0x0040
+#define DIGIT_3 0x0008
+#define DIGIT_4 0x0002
+#define DIGIT_5 0x8000 // Left most top display (display 1)
+#define DIGIT_6 0x4000
+#define DIGIT_7 0x0800
+#define DIGIT_8 0x0200
+
+ShiftSegmentDisplay display;
 Focus_Motor motor;
 Rotary_Knob knob;
 
@@ -85,7 +103,7 @@ void setup()
   pinMode(BUTTON_RIGHT, INPUT_PULLUP);  
 
   /* Setup the classes that will be used to control the more complex devices. */
-  display = Focus_Display(SRCLK, SER, RCLK);
+  display = ShiftSegmentDisplay(SRCLK, SER, RCLK);
   motor   = Focus_Motor(STEP, DIR, MS1, MS2);
   knob    = Rotary_Knob(STATEA, STATEB);
   
@@ -96,6 +114,13 @@ void setup()
   motorUpdateTime = millis();
   debugPrintTime = millis();
   decimalPlace = 0;
+  
+  display.setDigits(DIGIT_1, DIGIT_2, DIGIT_3, DIGIT_4,
+                    DIGIT_5, DIGIT_6, DIGIT_7, DIGIT_8);
+                    
+  display.setSegments(SEGMENT_A, SEGMENT_B, SEGMENT_C, SEGMENT_D,
+                      SEGMENT_E, SEGMENT_F, SEGMENT_G, SEGMENT_DP);
+  
 }
 
 void loop()
