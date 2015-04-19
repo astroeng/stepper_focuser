@@ -9,3 +9,5 @@ The user interface consists of two 4 digit 7 segment displays, a rotary knob, an
 As a secondary function the board was designed to also support a servo via a 3 pin connector. This was intended to be used to drive a mechanical intervalometer. But has since been changed over to an electronic intervalometer, which by happenstance this board will also support. 
 
 The idea behind embedding basically two designs into this board was to save on cost. This is a hobby I try and be as frugal as possible.
+
+This code is dependent on the ShiftSegmentDriver code, which is available as it’s own repository.
