@@ -25,55 +25,13 @@
  */
 
 #include <shift_segment_display.h>
+#include <rotary_knob_decoder.h>
+#include "config.h"
 #include "focus_motor.h"
-#include "rot_knob.h"
-
-#define STATEA    2
-#define STATEB    3
-#define BUTTON    4
-#define RED_LED   5
-#define GREEN_LED 6
-
-#define BUTTON_LEFT  7
-#define BUTTON_RIGHT 8
-
-#define SERVO_PWM 9
-
-#define SRCLK A1
-#define RCLK  10
-#define SER   11
-
-#define RJ7 12
-#define RJ6 13
-#define RJ5 A2
-#define RJ4 A4
-
-#define DIR  A5
-#define STEP A3
-#define MS1  A6
-#define MS2  A7
-
-#define SEGMENT_A  0x0004
-#define SEGMENT_B  0x0020
-#define SEGMENT_C  0x0001
-#define SEGMENT_D  0x2000
-#define SEGMENT_E  0x1000
-#define SEGMENT_F  0x0100
-#define SEGMENT_G  0x0010
-#define SEGMENT_DP 0x0400
-
-#define DIGIT_1 0x0080 // Left most bottom display (display 2)
-#define DIGIT_2 0x0040
-#define DIGIT_3 0x0008
-#define DIGIT_4 0x0002
-#define DIGIT_5 0x8000 // Left most top display (display 1)
-#define DIGIT_6 0x4000
-#define DIGIT_7 0x0800
-#define DIGIT_8 0x0200
 
 ShiftSegmentDisplay display;
 Focus_Motor motor;
-Rotary_Knob knob;
+RotaryKnobDecoder knob;
 
 unsigned long motorUpdateTime;
 unsigned long buttonCheckTime;
@@ -105,22 +63,21 @@ void setup()
   /* Setup the classes that will be used to control the more complex devices. */
   display = ShiftSegmentDisplay(SRCLK, SER, RCLK);
   motor   = Focus_Motor(STEP, DIR, MS1, MS2);
-  knob    = Rotary_Knob(STATEA, STATEB);
+  knob    = RotaryKnobDecoder(STATEA, STATEB);
   
   /* The Rotary Knob works best when attached to interrupts. */
   attachInterrupt(0, rot_knob, CHANGE);
   attachInterrupt(1, rot_knob, CHANGE);
-  
-  motorUpdateTime = millis();
-  debugPrintTime = millis();
-  decimalPlace = 0;
   
   display.setDigits(DIGIT_1, DIGIT_2, DIGIT_3, DIGIT_4,
                     DIGIT_5, DIGIT_6, DIGIT_7, DIGIT_8);
                     
   display.setSegments(SEGMENT_A, SEGMENT_B, SEGMENT_C, SEGMENT_D,
                       SEGMENT_E, SEGMENT_F, SEGMENT_G, SEGMENT_DP);
-  
+
+  motorUpdateTime = millis();
+  debugPrintTime = millis();
+  decimalPlace = 0;
 }
 
 void loop()
