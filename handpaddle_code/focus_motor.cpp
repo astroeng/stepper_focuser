@@ -16,7 +16,8 @@
 Focus_Motor::Focus_Motor()
 {
     currentPosition = 0;
-    desiredPosition = 0;
+    orderPosition   = 0;
+    
     stepPin = 0;
     dirPin  = 0;
     ms1Pin  = 0;
@@ -26,8 +27,9 @@ Focus_Motor::Focus_Motor()
 Focus_Motor::Focus_Motor(char stepPin, char dirPin, char ms1Pin, char ms2Pin)
 {
     currentPosition = 0;
-    desiredPosition = 0;
+    orderPosition   = 0;
     currentSpeed    = SPEED_ONE;
+    
     this->stepPin = stepPin;
     this->dirPin  = dirPin;
     this->ms1Pin  = ms1Pin;
@@ -39,27 +41,33 @@ Focus_Motor::Focus_Motor(char stepPin, char dirPin, char ms1Pin, char ms2Pin)
     pinMode(ms2Pin, OUTPUT);
 }
 
+
+void Focus_Motor::setSpeed(int speed)
+{
+  currentSpeed = speed;
+}
+
 /* This function allows the desired position to be updated. I choose to
  * only allow a direction input since the program internally tracks
  * current and desired position. If an absolute desired position function
  * were to be implemented nothing would break.
  */
 
-void Focus_Motor::updatePosition(char dir)
+void Focus_Motor::updateOrder(char dir)
 {
-  if (dir == MOVEOUT && desiredPosition <= (MAX_STEPS - currentSpeed))
+  if (dir == MOVEOUT && orderPosition <= (MAX_STEPS - currentSpeed))
   {
-    desiredPosition += currentSpeed;
+    orderPosition += currentSpeed;
   }
-  else if (dir == MOVEIN && desiredPosition >= currentSpeed)
+  else if (dir == MOVEIN && orderPosition >= currentSpeed)
   {
-    desiredPosition -= currentSpeed;
+    orderPosition -= currentSpeed;
   } 
 }
 
 void Focus_Motor::stopAtCurrentPosition()
 {
-  desiredPosition = currentPosition;
+  orderPosition = currentPosition;
 }
 
 /* Returns the desired position. Typically for display purposes.
@@ -67,7 +75,7 @@ void Focus_Motor::stopAtCurrentPosition()
 
 unsigned int Focus_Motor::getOrder()
 {
-  return desiredPosition;
+  return orderPosition;
 }
 
 /* Returns the desired position. Typically for display purposes.
@@ -82,13 +90,13 @@ unsigned int Focus_Motor::getPosition()
  * motor and then keep track of the position until the desired
  * position is reached.
  * Doing the motor stepping this way decouples the motor movement
- * from the rotary encoder and pervents missteps from spinning the
- * encoder to quickly.
+ * from the rotary encoder and prevents missteps caused by spinning 
+ * the encoder too quickly.
  */
 
 void Focus_Motor::processMotor()
 {
-  if (desiredPosition < currentPosition)
+  if (orderPosition < currentPosition)
   {
     digitalWrite(dirPin, LOW);
     digitalWrite(stepPin, LOW);
@@ -99,7 +107,7 @@ void Focus_Motor::processMotor()
     digitalWrite(stepPin, LOW);
   }
   
-  if (desiredPosition > currentPosition)
+  if (orderPosition > currentPosition)
   {
     digitalWrite(dirPin, HIGH);
     digitalWrite(stepPin, LOW);

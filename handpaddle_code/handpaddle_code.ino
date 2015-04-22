@@ -26,18 +26,15 @@
 
 #include <shift_segment_display.h>
 #include <rotary_knob_decoder.h>
+#include <primitive_scheduler.h>
 #include "config.h"
 #include "focus_motor.h"
 
 ShiftSegmentDisplay display;
-Focus_Motor motor;
-RotaryKnobDecoder knob;
+Focus_Motor         motor;
+RotaryKnobDecoder   knob;
+PrimitiveScheduler  schedule;
 
-unsigned long motorUpdateTime;
-unsigned long buttonCheckTime;
-unsigned long debugPrintTime;
-
-int decimalPlace;
 
 void setup()
 { 
@@ -53,11 +50,11 @@ void setup()
   pinMode(BUTTON, INPUT_PULLUP);
 
   /* Rotary Knob Outputs */
-  pinMode(RED_LED, OUTPUT);
+  pinMode(RED_LED,   OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   
   /* These buttons are normally open they are basically little micro switches. */
-  pinMode(BUTTON_LEFT, INPUT_PULLUP);
+  pinMode(BUTTON_LEFT,  INPUT_PULLUP);
   pinMode(BUTTON_RIGHT, INPUT_PULLUP);  
 
   /* Setup the classes that will be used to control the more complex devices. */
@@ -65,74 +62,58 @@ void setup()
   motor   = Focus_Motor(STEP, DIR, MS1, MS2);
   knob    = RotaryKnobDecoder(STATEA, STATEB);
   
-  /* The Rotary Knob works best when attached to interrupts. */
-  attachInterrupt(0, rot_knob, CHANGE);
-  attachInterrupt(1, rot_knob, CHANGE);
-  
   display.setDigits(DIGIT_1, DIGIT_2, DIGIT_3, DIGIT_4,
                     DIGIT_5, DIGIT_6, DIGIT_7, DIGIT_8);
                     
   display.setSegments(SEGMENT_A, SEGMENT_B, SEGMENT_C, SEGMENT_D,
                       SEGMENT_E, SEGMENT_F, SEGMENT_G, SEGMENT_DP);
 
-  motorUpdateTime = millis();
-  debugPrintTime = millis();
-  decimalPlace = 0;
+  /* The Rotary Knob works best when attached to interrupts. */
+  attachInterrupt(0, rot_knob, CHANGE); /* Arduino Pin #2 */
+  attachInterrupt(1, rot_knob, CHANGE); /* Arduino Pin #3 */
+
+  schedule.addTask(motor_task,    10);
+  schedule.addTask(display_task,  25);
+  schedule.addTask(button_task,  125);
 }
 
 void loop()
 {
-  /* The Arduino framework gets pretty cranky if we perfrom lengthy delays.
-   * To avoid delays but still update at regular intervals we setup a very
-   * crude schedule using the millis function and if statements.
-   */
-  unsigned long time = millis();
+  schedule.run();
+}
+
+/* Task to update the motor position. */
+void motor_task()
+{
+  motor.processMotor();
+}
+
+/* Task to update the displays. */
+void display_task()
+{
+  display.setDisplayValue(motor.getOrder());
+  display.setDisplayValue2(motor.getPosition());
+}
+
+/* Task to read the bottons and then perform actions. */
+void button_task()
+{
+  digitalWrite(RED_LED,LOW);
+  digitalWrite(GREEN_LED,LOW);
   
-  /* The motor processing should be done every 10ms... This is pretty
-   * arbitrary and was selected by experimentation.
-   */
-  
-  if ((motorUpdateTime + 10) < time)
+  if (digitalRead(BUTTON_LEFT) == LOW)
   {
-    motor.processMotor();
-    display.setDisplayValue(motor.getOrder(), decimalPlace);
-    display.setDisplayValue2(motor.getPosition(), 0);
-    motorUpdateTime = time;
+    digitalWrite(GREEN_LED,HIGH);
   }
-  
-  /* The sample rate for the non-interrupt inputs is 125ms */
-  
-  if ((buttonCheckTime + 125) < time)
+  if (digitalRead(BUTTON_RIGHT) == LOW)
   {
-    digitalWrite(RED_LED,LOW);
-    digitalWrite(GREEN_LED,LOW);
-    
-    if (digitalRead(BUTTON_LEFT) == LOW)
-    {
-      Serial.println("Button Left");
-      digitalWrite(GREEN_LED,HIGH);
-      decimalPlace++;
-      if (decimalPlace > 3)
-        decimalPlace = 0;
-    }
-    if (digitalRead(BUTTON_RIGHT) == LOW)
-    {
-      Serial.println("Button Right");
-      digitalWrite(RED_LED,HIGH);
-      decimalPlace--;
-      if (decimalPlace < 0)
-        decimalPlace = 3;
-    }
-    if (digitalRead(BUTTON) == LOW)
-    {
-      Serial.println("Button");
-      digitalWrite(GREEN_LED,HIGH);
-      digitalWrite(RED_LED,HIGH);
-      motor.stopAtCurrentPosition();
-    }
-    
-    buttonCheckTime = time;
+    digitalWrite(RED_LED,HIGH);
   }
+  if (digitalRead(BUTTON) == LOW)
+  {
+    digitalWrite(GREEN_LED,HIGH);
+    digitalWrite(RED_LED,HIGH);
+  }  
 }
 
 /* ISR for the rotary knob */
@@ -143,15 +124,17 @@ void rot_knob()
    * be called once per event. There a filter caps on the inputs for
    * this interrupt.
    */
+  
   int knob_direction = knob.read();
+  motor.setSpeed(knob.getSpeed());
   
   if (knob_direction == CLOCKWISE)
   {
-    motor.updatePosition(MOVEIN);
+    motor.updateOrder(MOVEIN);
   }
   else if (knob_direction == ANTICLOCKWISE)
   {
-    motor.updatePosition(MOVEOUT);
+    motor.updateOrder(MOVEOUT);
   }
 
 }
